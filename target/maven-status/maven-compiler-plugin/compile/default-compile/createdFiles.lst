@@ -1,0 +1,5 @@
+ru\yandex\praktikum\clients\UserClient.class
+ru\yandex\praktikum\clients\OrderClient.class
+ru\yandex\praktikum\models\Ingredients.class
+ru\yandex\praktikum\models\Order.class
+ru\yandex\praktikum\models\User.class
