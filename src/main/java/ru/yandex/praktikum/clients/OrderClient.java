@@ -3,7 +3,6 @@ package ru.yandex.praktikum.clients;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import ru.yandex.praktikum.models.Order;
-
 import static io.restassured.RestAssured.given;
 
 public class OrderClient {

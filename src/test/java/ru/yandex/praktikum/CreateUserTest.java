@@ -1,45 +1,45 @@
 package ru.yandex.praktikum;
 
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.response.Response;
-import org.junit.After;
+import io.restassured.response.ValidatableResponse;
+import org.apache.http.HttpStatus;
 import org.junit.Test;
-import ru.yandex.praktikum.clients.UserClient;
 import ru.yandex.praktikum.models.User;
-
 import static org.hamcrest.Matchers.equalTo;
 
-public class CreateUserTest {
-    private final UserClient userClient = new UserClient();
-    private String token;
-
-    @After
-    public void tearDown() {
-        userClient.delete(token);
-    }
+public class CreateUserTest extends BaseTest {
 
     @Test
     @DisplayName("Создание уникального пользователя")
+    @Description("Успешное создание пользователя со всеми валидными полями")
     public void createUniqueUser() {
         User user = new User("test_" + System.currentTimeMillis() + "@ya.ru", "1234", "Ivan");
-        Response response = userClient.createUser(user);
-        token = response.path("accessToken");
-        response.then().statusCode(200).body("success", equalTo(true));
+
+        ValidatableResponse success = userClient.createUser(user)
+                .then().assertThat().statusCode(HttpStatus.SC_OK)
+                .and().body("success", equalTo(true));
     }
 
     @Test
-    @DisplayName("Создание пользователя, который уже зарегистрирован")
-    public void createDuplicateUser() {
-        User user = new User("duplicate@ya.ru", "1234", "Ivan");
-        userClient.createUser(user);
-        Response response = userClient.createUser(user);
-        response.then().statusCode(403).body("message", equalTo("User already exists"));
+    @DisplayName("Создание пользователя без email")
+    @Description("Негативный кейс: проверка сообщения об ошибке при отсутствии почты")
+    public void createUserWithoutEmail() {
+        User user = new User(null, "1234", "Ivan");
+
+        ValidatableResponse message = userClient.createUser(user)
+                .then().assertThat().statusCode(HttpStatus.SC_FORBIDDEN)
+                .and().body("message", equalTo("Email, password and name are required fields"));
     }
 
     @Test
-    @DisplayName("Создание пользователя без обязательного поля")
-    public void createUserWithoutField() {
-        User user = new User("", "1234", "Ivan");
-        userClient.createUser(user).then().statusCode(403);
+    @DisplayName("Создание пользователя без пароля")
+    @Description("Негативный кейс: проверка ошибки при отсутствии пароля")
+    public void createUserWithoutPassword() {
+        User user = new User("test@ya.ru", null, "Ivan");
+
+        ValidatableResponse message = userClient.createUser(user)
+                .then().assertThat().statusCode(HttpStatus.SC_FORBIDDEN)
+                .and().body("message", equalTo("Email, password and name are required fields"));
     }
 }

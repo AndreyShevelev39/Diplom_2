@@ -1,42 +1,33 @@
 package ru.yandex.praktikum;
 
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
-import org.junit.After;
-import org.junit.Before;
+import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
+import org.apache.http.HttpStatus;
 import org.junit.Test;
-import ru.yandex.praktikum.clients.UserClient;
 import ru.yandex.praktikum.models.User;
-
 import static org.hamcrest.Matchers.equalTo;
 
-public class LoginUserTest {
-    private final UserClient userClient = new UserClient();
-    private User user;
-    private String token;
-
-    @Before
-    public void setUp() {
-        user = new User("login_" + System.currentTimeMillis() + "@ya.ru", "p123", "Tester");
-        userClient.createUser(user);
-    }
-
-    @After
-    public void tearDown() {
-        userClient.delete(token);
+public class LoginUserTest extends BaseTest {
+    @Test
+    @DisplayName("Вход с неверным логином")
+    @Description("Проверка ошибки 401 и сообщения при вводе несуществующего email")
+    public void loginWithWrongEmail() {
+        User user = new User("non_existent_" + System.currentTimeMillis() + "@ya.ru", "pass", "Ivan");
+        ValidatableResponse body = userClient.login(user)
+                .then().assertThat().statusCode(HttpStatus.SC_UNAUTHORIZED)
+                .and().body("message", equalTo("email or password are incorrect"));
     }
 
     @Test
-    @DisplayName("Логин под существующим пользователем")
+    @DisplayName("Вход под существующим пользователем")
+    @Description("Успешная авторизация с валидными данными")
     public void loginSuccess() {
-        var response = userClient.login(user);
-        token = response.path("accessToken");
-        response.then().statusCode(200).body("success", equalTo(true));
-    }
-
-    @Test
-    @DisplayName("Логин с неверным паролем")
-    public void loginWithWrongPass() {
-        User wrongUser = new User(user.getEmail(), "wrong", "");
-        userClient.login(wrongUser).then().statusCode(401);
+        User user = new User("login_" + System.currentTimeMillis() + "@ya.ru", "pass123", "Ivan");
+        Response user1 = userClient.createUser(user);
+        ValidatableResponse success = userClient.login(user)
+                .then().assertThat().statusCode(HttpStatus.SC_OK)
+                .and().body("success", equalTo(true));
     }
 }
